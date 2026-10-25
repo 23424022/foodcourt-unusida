@@ -22,7 +22,37 @@ const state = {
 const $root = document.getElementById("root");
 const tokenCall = (path, opt = {}) => api(path, { ...opt, token: state.token });
 
+// ---------- Push notification (hanya aktif di dalam aplikasi Android / Capacitor) ----------
+const nativePush = () => (window.Capacitor?.isNativePlatform?.() ? window.Capacitor?.Plugins?.PushNotifications : null);
+let pushListening = false;
+async function initPush() {
+  const P = nativePush();
+  if (!P) return;
+  try {
+    if (!pushListening) {
+      pushListening = true;
+      P.addListener("registration", async (t) => {
+        store.set("fc_push_token", t.value);
+        try { await tokenCall("/api/kasir/push-token", { method: "POST", body: { token: t.value } }); } catch { /* dicoba lagi saat login berikutnya */ }
+      });
+      P.addListener("registrationError", () => toast("Notifikasi HP gagal diaktifkan", "error"));
+    }
+    let perm = await P.checkPermissions();
+    if (perm.receive !== "granted") perm = await P.requestPermissions();
+    if (perm.receive !== "granted") return toast("Izinkan notifikasi agar pesanan baru tetap berbunyi saat aplikasi ditutup", "error");
+    await P.createChannel?.({ id: "pesanan", name: "Pesanan masuk", description: "Pesanan baru dan pembayaran QRIS", importance: 5, visibility: 1, vibration: true });
+    await P.register();
+  } catch { /* abaikan: aplikasi tetap jalan lewat socket */ }
+}
+async function unregisterPush() {
+  const token = store.get("fc_push_token");
+  if (!token || !state.token) return;
+  store.del("fc_push_token");
+  try { await tokenCall("/api/kasir/push-token", { method: "DELETE", body: { token } }); } catch { /* abaikan */ }
+}
+
 function logout(msg) {
+  unregisterPush();
   store.del("fc_kasir_token"); store.del("fc_kasir_user");
   state.token = null; state.user = null; state.me = null;
   if (socket) { socket.disconnect(); socket = null; }
@@ -104,6 +134,7 @@ async function renderShell() {
   drawOpenSwitch();
   drawTab();
   connectRealtime();
+  initPush();
   clearInterval(poll);
   poll = setInterval(() => { if (state.tab === "pesanan" && !document.hidden) loadOrders(true); }, 30000);
 }

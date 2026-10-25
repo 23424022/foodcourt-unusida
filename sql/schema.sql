@@ -114,6 +114,18 @@ CREATE TABLE IF NOT EXISTS queue_counters (
   CONSTRAINT fk_qc_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- 9. TOKEN PERANGKAT untuk push notification (aplikasi Android kantin)
+CREATE TABLE IF NOT EXISTS device_tokens (
+  id          INT AUTO_INCREMENT PRIMARY KEY,
+  tenant_id   INT NOT NULL,
+  token       VARCHAR(512) NOT NULL,
+  platform    VARCHAR(20) NOT NULL DEFAULT 'android',
+  updated_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_device_token (token),
+  KEY idx_device_tenant (tenant_id),
+  CONSTRAINT fk_dt_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- ============================================================
 -- DATA AWAL (hanya masuk kalau tabel masih kosong)
 -- Semua password awal: password123  (sudah di-hash bcrypt)

@@ -5,6 +5,7 @@ import { saveImage } from "../config/images.js";
 import { fileOf } from "../middleware/upload.js";
 import { emitToOrder } from "../sockets/socket.js";
 import { HttpError, toInt } from "../utils.js";
+import { saveToken, deleteToken } from "../config/push.js";
 
 const STATUS_ORDER = ["diterima", "diproses", "siap", "diambil"];
 
@@ -260,4 +261,19 @@ export async function getLaporan(req, res) {
     harian: harian.map(num),
     menu_terlaris: terlaris.map(num)
   });
+}
+
+// POST /api/kasir/push-token -> simpan token FCM perangkat kasir ini
+export async function registerPushToken(req, res) {
+  const token = String(req.body?.token || "").trim();
+  if (token.length < 20 || token.length > 512) throw new HttpError(400, "Token tidak valid");
+  await saveToken(req.tenantId, token, "android");
+  res.json({ ok: true });
+}
+
+// DELETE /api/kasir/push-token -> dipanggil saat logout
+export async function unregisterPushToken(req, res) {
+  const token = String(req.body?.token || "").trim();
+  if (token) await deleteToken(token);
+  res.json({ ok: true });
 }

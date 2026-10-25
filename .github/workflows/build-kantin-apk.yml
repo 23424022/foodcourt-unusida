@@ -1,0 +1,64 @@
+name: Build APK Kantin
+
+on:
+  workflow_dispatch:
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Pasang dependensi
+        working-directory: kantin-app
+        run: npm install
+
+      - name: Atur alamat server kantin
+        working-directory: kantin-app
+        env:
+          KANTIN_URL: ${{ vars.KANTIN_URL }}
+        run: |
+          if [ -z "$KANTIN_URL" ]; then echo "Isi Repository variable KANTIN_URL (contoh https://nama.onrender.com/kantin/)"; exit 1; fi
+          sed -i "s#__KANTIN_URL__#${KANTIN_URL}#" capacitor.config.json
+
+      - name: Buat proyek Android
+        working-directory: kantin-app
+        run: npx cap add android
+
+      - name: Pasang google-services.json (Firebase)
+        working-directory: kantin-app
+        env:
+          GOOGLE_SERVICES_B64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
+        run: |
+          if [ -z "$GOOGLE_SERVICES_B64" ]; then echo "Isi secret GOOGLE_SERVICES_JSON_B64"; exit 1; fi
+          echo "$GOOGLE_SERVICES_B64" | base64 -d > android/app/google-services.json
+
+      - name: Pastikan izin notifikasi Android 13+
+        working-directory: kantin-app
+        run: |
+          M=android/app/src/main/AndroidManifest.xml
+          grep -q POST_NOTIFICATIONS "$M" || sed -i 's#<application#<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n    <application#' "$M"
+
+      - name: Sinkronkan
+        working-directory: kantin-app
+        run: npx cap sync android
+
+      - name: Build APK debug
+        working-directory: kantin-app/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kantin-apk
+          path: kantin-app/android/app/build/outputs/apk/debug/app-debug.apk

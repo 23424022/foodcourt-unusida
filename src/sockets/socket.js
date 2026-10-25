@@ -1,3 +1,5 @@
+import { pushToTenant } from "../config/push.js";
+
 // Singleton instance Socket.IO — hindari circular import antara server.js dan routes/controllers
 let _io = null;
 
@@ -13,6 +15,7 @@ export function getIO() {
 // Helper: kirim event ke room khusus 1 kantin (kasir kantin itu doang yang nerima)
 export function emitToTenant(tenantId, event, payload) {
   getIO().to(`tenant_${tenantId}`).emit(event, payload);
+  pushToTenant(tenantId, event, payload); // HP kantin yang aplikasinya tertutup tetap dapat notifikasi
 }
 
 // Helper: kirim event ke room khusus 1 order (customer yang lagi nunggu status)

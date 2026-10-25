@@ -105,3 +105,30 @@ Uang QRIS masuk ke **satu akun GoPay Merchant** milik pengelola. Mutasiku membua
 - Notifikasi sistem butuh **izin browser**. Izin diminta saat kasir pertama kali menyentuh layar / menekan bel, dan saat pelanggan menekan "Pesan". Notifikasi sistem hanya muncul saat halaman **tidak sedang dilihat** (tab lain / aplikasi di latar belakang).
 - Batasan: notifikasi bekerja selama halamannya masih terbuka. Kalau browser benar-benar ditutup, notifikasi tidak bisa masuk (butuh Web Push dengan server push, belum dipasang). Untuk HP kasir, biarkan halaman dashboard terbuka dan layar tidak dimatikan total.
 - Notifikasi memakai service worker `/sw.js`. Di HP, notifikasi sistem butuh HTTPS (domain Railway sudah HTTPS).
+
+## G. Aplikasi Android kantin (APK + notifikasi saat aplikasi ditutup)
+
+Halaman kasir `/kantin/` dibungkus jadi APK memakai Capacitor. APK memuat halaman dari server online, jadi setiap deploy ulang otomatis memperbarui isi aplikasi. Socket tetap realtime saat aplikasi terbuka; saat aplikasi ditutup atau HP terkunci, notifikasi datang lewat push Firebase (FCM, gratis). Push dikirim untuk pesanan **Cash** baru dan pembayaran **QRIS lunas**.
+
+**1. Firebase (sekali saja)**
+1. Buka console.firebase.google.com, **Add project** (Google Analytics boleh dimatikan).
+2. Di project, **Add app -> Android**, isi package name `app.foodcourt.kantin`, lalu unduh **google-services.json**.
+3. **Project settings -> Service accounts -> Generate new private key**. Isi seluruh file JSON itu ke variabel `FIREBASE_SERVICE_ACCOUNT` di Render (atau hosting-mu). Jangan taruh file ini di GitHub.
+4. Deploy ulang server supaya tabel `device_tokens` ikut dibuat (atau impor ulang `sql/schema.sql`).
+
+**2. GitHub (build APK otomatis)**
+1. Repo -> **Settings -> Secrets and variables -> Actions**.
+2. Tab **Secrets** -> New secret `GOOGLE_SERVICES_JSON_B64` berisi google-services.json yang di-base64. Di PowerShell: `[Convert]::ToBase64String([IO.File]::ReadAllBytes("google-services.json"))`.
+3. Tab **Variables** -> New variable `KANTIN_URL` berisi `https://NAMA-KAMU.onrender.com/kantin/` (pakai alamat yang stabil).
+4. Tab **Actions** -> **Build APK Kantin** -> **Run workflow**. Tunggu beberapa menit, lalu unduh artifact `kantin-apk` (zip berisi `app-debug.apk`).
+
+**3. Pasang dan tes**
+1. Salin `app-debug.apk` ke HP kantin, buka, izinkan "pasang dari sumber tidak dikenal".
+2. Login kasir, izinkan notifikasi saat diminta.
+3. Kunci layar HP, buat pesanan Cash dari HP lain. Notifikasi harus muncul dan berbunyi.
+
+**Catatan**
+- Ini APK debug untuk dipasang langsung, bukan untuk Play Store.
+- Matikan penghematan baterai untuk aplikasi ini (Pengaturan -> Aplikasi -> Kantin FoodCourt -> Baterai -> Tidak dibatasi), supaya notifikasi tidak tertunda.
+- Di Render free, server yang sedang tidur butuh sekitar satu menit untuk bangun, jadi aplikasi bisa menampilkan layar menunggu dulu.
+- Alur ini belum diuji di lingkungan pengembangan; kalau build gagal di GitHub Actions, salin log langkah yang merah dan kirim ke pengembang.

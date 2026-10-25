@@ -6,7 +6,7 @@ import { wrap } from "../utils.js";
 import {
   login, getMe, setKantinStatus, getDashboard, getOrdersMasuk, getOrderItems,
   updateStatusOrder, konfirmasiBayar, listMenus, tambahMenu, updateMenu,
-  updateStatusMenu, deleteMenu, getLaporan
+  updateStatusMenu, deleteMenu, getLaporan, registerPushToken, unregisterPushToken
 } from "../controllers/kasirController.js";
 
 const router = Router();
@@ -35,5 +35,7 @@ router.put("/menus/:menuId", parseImages(["foto"]), wrap(updateMenu));
 router.patch("/menus/:menuId/status", wrap(updateStatusMenu));
 router.delete("/menus/:menuId", wrap(deleteMenu));
 router.get("/laporan", wrap(getLaporan));
+router.post("/push-token", wrap(registerPushToken));
+router.delete("/push-token", wrap(unregisterPushToken));
 
 export default router;

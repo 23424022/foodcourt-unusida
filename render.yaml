@@ -37,3 +37,7 @@ services:
         sync: false
       - key: MUTASIKU_REDIRECT_URL
         sync: false
+      - key: MUTASIKU_MOCK
+        value: "false"
+      - key: FIREBASE_SERVICE_ACCOUNT
+        sync: false

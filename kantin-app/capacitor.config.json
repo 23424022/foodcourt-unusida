@@ -1,0 +1,14 @@
+{
+  "appId": "app.foodcourt.kantin",
+  "appName": "Kantin FoodCourt",
+  "webDir": "www",
+  "server": {
+    "url": "__KANTIN_URL__",
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
+    }
+  }
+}

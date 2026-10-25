@@ -1,3 +1,5 @@
 node_modules/
 .env
 npm-debug.log*
+kantin-app/node_modules/
+kantin-app/android/
